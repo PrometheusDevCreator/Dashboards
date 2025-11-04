@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Rabdan Academy - MOD/AI Dashboard</title>
     
-    <!-- Firebase SDK v9 (Compat mode for easier integration) -->
+    <!-- Firebase SDK v9 (Compat mode) -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
     
@@ -65,6 +65,29 @@
             transform: translateY(-1px);
             box-shadow: 0 4px 8px rgba(0,0,0,0.15);
         }
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+        .modal-content {
+            background: white;
+            padding: 32px;
+            border-radius: 12px;
+            max-width: 500px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
     </style>
 </head>
 <body>
@@ -73,7 +96,7 @@
     <script type="text/babel">
         const { useState, useEffect } = React;
 
-        // ✅ YOUR FIREBASE CONFIGURATION - ALREADY CONFIGURED!
+        // Firebase Configuration
         const firebaseConfig = {
             apiKey: "AIzaSyBkuIxCpY4_C39rsGT6hoFXHHCVY_GYXbI",
             authDomain: "aitutor-8d402.firebaseapp.com",
@@ -93,7 +116,7 @@
             firebase.initializeApp(firebaseConfig);
             db = firebase.database();
             isFirebaseConfigured = true;
-            console.log("✅ Firebase connected successfully to:", firebaseConfig.projectId);
+            console.log("✅ Firebase connected successfully");
         } catch (error) {
             console.error("❌ Firebase initialization error:", error);
         }
@@ -133,14 +156,7 @@
         const Eye = (props) => <Icon {...props} d="M1 12 S 5 4 12 4 S 23 12 23 12 S 19 20 12 20 S 1 12 1 12 M 12 9 A 3 3 0 1 1 12 15 A 3 3 0 1 1 12 9" />;
         const Plus = (props) => <Icon {...props} d="M12 5 L 12 19 M 5 12 L 19 12" />;
         const Trash = (props) => <Icon {...props} d="M3 6 L 5 6 L 21 6 M 19 6 L 19 20 C 19 21 18 22 17 22 L 7 22 C 6 22 5 21 5 20 L 5 6 M 8 6 L 8 4 C 8 3 9 2 10 2 L 14 2 C 15 2 16 3 16 4 L 16 6" />;
-
-        const Logo = ({ size = 50 }) => (
-            <div style={{ width: size, height: size, background: `linear-gradient(135deg, ${colors.secondary} 0%, ${colors.accent} 100%)`, borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
-                <svg width={size * 0.6} height={size * 0.6} viewBox="0 0 100 100">
-                    <path d="M30,20 L50,35 L70,20 L70,80 L50,65 L30,80 Z" fill={colors.white} />
-                </svg>
-            </div>
-        );
+        const UserPlus = (props) => <Icon {...props} d="M16 21 L 16 19 A 4 4 0 0 0 12 15 L 4 15 A 4 4 0 0 0 0 19 L 0 21 M 8 7 A 4 4 0 1 1 8 15 A 4 4 0 1 1 8 7 M 20 8 L 20 14 M 17 11 L 23 11" />;
 
         const defaultData = {
             title: 'MOD/AI',
@@ -188,6 +204,8 @@
 
         const App = () => {
             const [auth, setAuth] = useState(false);
+            const [userRole, setUserRole] = useState('');
+            const [currentUser, setCurrentUser] = useState('');
             const [user, setUser] = useState('');
             const [pass, setPass] = useState('');
             const [tab, setTab] = useState('dashboard');
@@ -197,32 +215,28 @@
             const [data, setData] = useState(defaultData);
             const [saveStatus, setSaveStatus] = useState('');
             const [loading, setLoading] = useState(true);
+            const [users, setUsers] = useState({});
+            const [showUserModal, setShowUserModal] = useState(false);
+            const [newUsername, setNewUsername] = useState('');
+            const [newPassword, setNewPassword] = useState('');
 
-            // Load data from Firebase
+            // Load data and users from Firebase
             useEffect(() => {
                 if (isFirebaseConfigured && db) {
+                    // Load project data
                     const dataRef = db.ref('projectData');
-                    
                     dataRef.once('value')
                         .then((snapshot) => {
                             const firebaseData = snapshot.val();
                             if (firebaseData) {
                                 setData(firebaseData);
-                                console.log("📥 Data loaded from Firebase");
                             } else {
-                                // Initialize Firebase with default data
                                 dataRef.set(defaultData)
-                                    .then(() => console.log("📤 Default data initialized in Firebase"))
                                     .catch((error) => console.error("Error initializing data:", error));
                             }
-                            setLoading(false);
                         })
-                        .catch((error) => {
-                            console.error("Error loading data:", error);
-                            setLoading(false);
-                        });
+                        .catch((error) => console.error("Error loading data:", error));
 
-                    // Listen for real-time updates
                     dataRef.on('value', (snapshot) => {
                         const firebaseData = snapshot.val();
                         if (firebaseData) {
@@ -230,7 +244,39 @@
                         }
                     });
 
-                    return () => dataRef.off();
+                    // Load users
+                    const usersRef = db.ref('users');
+                    usersRef.once('value')
+                        .then((snapshot) => {
+                            const firebaseUsers = snapshot.val();
+                            if (firebaseUsers) {
+                                setUsers(firebaseUsers);
+                            } else {
+                                // Initialize with admin user
+                                const defaultUsers = {
+                                    admin: { password: 'admin123', role: 'admin' }
+                                };
+                                usersRef.set(defaultUsers);
+                                setUsers(defaultUsers);
+                            }
+                            setLoading(false);
+                        })
+                        .catch((error) => {
+                            console.error("Error loading users:", error);
+                            setLoading(false);
+                        });
+
+                    usersRef.on('value', (snapshot) => {
+                        const firebaseUsers = snapshot.val();
+                        if (firebaseUsers) {
+                            setUsers(firebaseUsers);
+                        }
+                    });
+
+                    return () => {
+                        dataRef.off();
+                        usersRef.off();
+                    };
                 } else {
                     setLoading(false);
                 }
@@ -239,21 +285,17 @@
             // Save data
             const saveData = (newData) => {
                 setData(newData);
-                
                 if (isFirebaseConfigured && db) {
                     db.ref('projectData').set(newData)
                         .then(() => {
-                            setSaveStatus('✓ Saved to cloud');
+                            setSaveStatus('✓ Saved');
                             setTimeout(() => setSaveStatus(''), 2000);
                         })
                         .catch((error) => {
-                            setSaveStatus('✗ Save failed');
+                            setSaveStatus('✗ Failed');
                             console.error('Save error:', error);
                             setTimeout(() => setSaveStatus(''), 3000);
                         });
-                } else {
-                    setSaveStatus('✗ Firebase not connected');
-                    setTimeout(() => setSaveStatus(''), 2000);
                 }
             };
 
@@ -275,11 +317,54 @@
 
             const login = (e) => {
                 e.preventDefault();
-                if (user === 'User123' && pass === '1234') {
+                if (users[user] && users[user].password === pass) {
                     setAuth(true);
+                    setCurrentUser(user);
+                    setUserRole(users[user].role);
                     setErr('');
                 } else {
                     setErr('Invalid credentials');
+                }
+            };
+
+            const addUser = () => {
+                if (!newUsername || !newPassword) {
+                    alert('Please enter both username and password');
+                    return;
+                }
+                if (users[newUsername]) {
+                    alert('Username already exists');
+                    return;
+                }
+                const updatedUsers = {
+                    ...users,
+                    [newUsername]: { password: newPassword, role: 'viewer' }
+                };
+                if (isFirebaseConfigured && db) {
+                    db.ref('users').set(updatedUsers)
+                        .then(() => {
+                            setUsers(updatedUsers);
+                            setNewUsername('');
+                            setNewPassword('');
+                            setShowUserModal(false);
+                        })
+                        .catch((error) => console.error('Error adding user:', error));
+                }
+            };
+
+            const deleteUser = (username) => {
+                if (username === 'admin') {
+                    alert('Cannot delete admin user');
+                    return;
+                }
+                if (confirm(`Delete user ${username}?`)) {
+                    const updatedUsers = { ...users };
+                    delete updatedUsers[username];
+                    if (isFirebaseConfigured && db) {
+                        db.ref('users').set(updatedUsers)
+                            .then(() => setUsers(updatedUsers))
+                            .catch((error) => console.error('Error deleting user:', error));
+                    }
                 }
             };
 
@@ -287,7 +372,6 @@
                 const newData = { ...data };
                 const keys = path.split('.');
                 let current = newData;
-                
                 for (let i = 0; i < keys.length - 1; i++) {
                     current = current[keys[i]];
                 }
@@ -320,8 +404,8 @@
                 return (
                     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: colors.bg }}>
                         <div style={{ textAlign: 'center' }}>
-                            <Logo size={100} />
-                            <p style={{ marginTop: '20px', color: colors.textLight, fontSize: '14px', fontWeight: '600' }}>Loading dashboard...</p>
+                            <img src="https://raw.githubusercontent.com/PrometheusDevCreator/Dashboards/main/Rabdan%20Logo%203.png" alt="Rabdan Academy" style={{ maxWidth: '200px', marginBottom: '20px' }} />
+                            <p style={{ color: colors.textLight, fontSize: '14px', fontWeight: '600' }}>Loading dashboard...</p>
                         </div>
                     </div>
                 );
@@ -332,32 +416,18 @@
                     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.secondary} 100%)`, padding: '20px' }}>
                         <div style={{ background: colors.white, padding: '48px 40px', borderRadius: '16px', width: '100%', maxWidth: '420px', boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
                             <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-                                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}><Logo size={100} /></div>
-                                <h1 style={{ fontSize: '26px', fontWeight: '700', color: colors.primary, marginBottom: '8px', letterSpacing: '-0.5px' }}>Rabdan Academy</h1>
-                                <p style={{ color: colors.textLight, fontSize: '14px', fontWeight: '500' }}>MOD/AI Project Management</p>
-                                
-                                {isFirebaseConfigured && (
-                                    <div style={{ marginTop: '16px', padding: '12px', background: '#D4EDDA', border: '1px solid #C3E6CB', borderRadius: '8px', fontSize: '12px', color: '#155724', textAlign: 'center' }}>
-                                        <strong>✅ Connected to Firebase</strong><br/>
-                                        Project: {firebaseConfig.projectId}
-                                    </div>
-                                )}
+                                <img src="https://raw.githubusercontent.com/PrometheusDevCreator/Dashboards/main/Rabdan%20Logo%201.png" alt="Rabdan Academy" style={{ maxWidth: '250px', marginBottom: '32px' }} />
                             </div>
                             <form onSubmit={login}>
                                 <div style={{ marginBottom: '20px' }}>
-                                    <label style={{ display: 'block', marginBottom: '8px', color: colors.text, fontSize: '13px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Username</label>
-                                    <input type="text" value={user} onChange={(e) => setUser(e.target.value)} className="edit-field" placeholder="Enter username" />
+                                    <input type="text" value={user} onChange={(e) => setUser(e.target.value)} className="edit-field" placeholder="Username" style={{ textAlign: 'center' }} />
                                 </div>
                                 <div style={{ marginBottom: '24px' }}>
-                                    <label style={{ display: 'block', marginBottom: '8px', color: colors.text, fontSize: '13px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Password</label>
-                                    <input type="password" value={pass} onChange={(e) => setPass(e.target.value)} className="edit-field" placeholder="Enter password" />
+                                    <input type="password" value={pass} onChange={(e) => setPass(e.target.value)} className="edit-field" placeholder="Password" style={{ textAlign: 'center' }} />
                                 </div>
-                                {err && <div style={{ padding: '14px', background: '#FEE', color: colors.danger, borderRadius: '8px', marginBottom: '20px', fontSize: '13px', fontWeight: '600', border: `1px solid ${colors.danger}` }}>{err}</div>}
+                                {err && <div style={{ padding: '14px', background: '#FEE', color: colors.danger, borderRadius: '8px', marginBottom: '20px', fontSize: '13px', fontWeight: '600', border: `1px solid ${colors.danger}`, textAlign: 'center' }}>{err}</div>}
                                 <button type="submit" style={{ width: '100%', padding: '16px', background: colors.primary, color: colors.white, border: 'none', borderRadius: '8px', fontSize: '15px', fontWeight: '700', cursor: 'pointer', letterSpacing: '0.5px', textTransform: 'uppercase', boxShadow: '0 4px 12px rgba(26,47,79,0.3)' }}>Sign In</button>
                             </form>
-                            <div style={{ marginTop: '24px', padding: '16px', background: colors.bg, borderRadius: '8px', fontSize: '12px', color: colors.textLight, textAlign: 'center', border: `1px solid ${colors.border}` }}>
-                                <strong style={{ color: colors.text }}>Demo:</strong> User123 / 1234
-                            </div>
                         </div>
                     </div>
                 );
@@ -365,17 +435,18 @@
 
             const statusColor = data.status === 'green' ? colors.success : data.status === 'yellow' ? colors.warning : colors.danger;
             const needle = data.status === 'green' ? 30 : data.status === 'yellow' ? 0 : -30;
+            const isAdmin = userRole === 'admin';
 
             return (
                 <div style={{ minHeight: '100vh', background: colors.bg }}>
                     {/* Header */}
                     <div style={{ background: colors.primary, borderBottom: `3px solid ${colors.accent}`, padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                            <Logo size={48} />
+                            <img src="https://raw.githubusercontent.com/PrometheusDevCreator/Dashboards/main/Rabdan%20Logo%203.png" alt="Rabdan Academy" style={{ height: '48px' }} />
                             <div>
                                 <h1 style={{ fontSize: '18px', fontWeight: '700', color: colors.white, margin: 0, letterSpacing: '-0.3px' }}>RABDAN ACADEMY</h1>
                                 <p style={{ fontSize: '12px', color: colors.accent, margin: 0, fontWeight: '600' }}>
-                                    {isFirebaseConfigured ? '✅ Cloud Connected' : '⚠️ Offline Mode'}
+                                    {currentUser} ({userRole})
                                 </p>
                             </div>
                         </div>
@@ -383,89 +454,659 @@
                             {saveStatus && (
                                 <span style={{ color: colors.accent, fontSize: '12px', fontWeight: '700' }}>{saveStatus}</span>
                             )}
-                            <button onClick={() => setEdit(!edit)} style={{ padding: '8px 16px', background: edit ? colors.accent : 'transparent', color: edit ? colors.primary : colors.white, border: `2px solid ${edit ? colors.accent : colors.white}`, borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                                {edit ? <Save size={14} color={colors.primary} /> : <Edit2 size={14} color={colors.white} />}
-                                <span className="mobile-hide">{edit ? 'Exit Edit' : 'Edit Mode'}</span>
-                            </button>
+                            {isAdmin && (
+                                <>
+                                    <button onClick={() => setShowUserModal(true)} style={{ padding: '8px 16px', background: colors.accent, color: colors.primary, border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                        <UserPlus size={14} color={colors.primary} />
+                                        <span className="mobile-hide">Users</span>
+                                    </button>
+                                    <button onClick={() => setEdit(!edit)} style={{ padding: '8px 16px', background: edit ? colors.accent : 'transparent', color: edit ? colors.primary : colors.white, border: `2px solid ${edit ? colors.accent : colors.white}`, borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                        {edit ? <Save size={14} color={colors.primary} /> : <Edit2 size={14} color={colors.white} />}
+                                        <span className="mobile-hide">{edit ? 'Save' : 'Edit'}</span>
+                                    </button>
+                                </>
+                            )}
                             <button onClick={() => setAuth(false)} style={{ padding: '8px 16px', background: 'transparent', color: colors.white, border: `2px solid ${colors.white}`, borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Logout</button>
                         </div>
                     </div>
 
-                    {/* Simple Demo Content */}
-                    <div style={{ padding: '24px' }}>
-                        <div style={{ background: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.secondary} 100%)`, padding: '32px', borderRadius: '12px', marginBottom: '24px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', border: `1px solid ${colors.accent}`, textAlign: 'center' }}>
-                            {edit ? (
-                                <input 
-                                    type="text" 
-                                    value={data.title} 
-                                    onChange={(e) => updateField('title', e.target.value)}
-                                    style={{ fontSize: '32px', fontWeight: '700', color: colors.white, margin: 0, background: 'transparent', border: 'none', borderBottom: `3px solid ${colors.accent}`, outline: 'none', textAlign: 'center', width: '300px', textTransform: 'uppercase' }}
-                                />
-                            ) : (
-                                <h2 style={{ fontSize: '32px', fontWeight: '700', color: colors.white, margin: 0, textTransform: 'uppercase' }}>{data.title}</h2>
-                            )}
-                            <p style={{ fontSize: '16px', color: colors.accent, margin: '12px 0 0 0', fontWeight: '600' }}>Project Dashboard</p>
-                        </div>
-
-                        <div style={{ background: colors.white, padding: '32px', borderRadius: '12px', border: `1px solid ${colors.border}`, textAlign: 'center' }}>
-                            <div style={{ marginBottom: '24px' }}>
-                                <Clock size={48} color={colors.primary} style={{ margin: '0 auto' }} />
-                            </div>
-                            <h3 style={{ fontSize: '20px', fontWeight: '700', color: colors.primary, marginBottom: '20px', textTransform: 'uppercase' }}>Launch Countdown</h3>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', maxWidth: '500px', margin: '0 auto 24px' }}>
-                                {[
-                                    { label: 'DAYS', value: time.days },
-                                    { label: 'HOURS', value: time.hours },
-                                    { label: 'MINUTES', value: time.minutes },
-                                    { label: 'SECONDS', value: time.seconds }
-                                ].map((item, idx) => (
-                                    <div key={idx}>
-                                        <div style={{ background: colors.primary, padding: '20px', borderRadius: '12px', marginBottom: '8px', border: `3px solid ${colors.accent}` }}>
-                                            <div style={{ fontSize: '32px', fontWeight: '700', color: colors.white }}>{String(item.value).padStart(2, '0')}</div>
-                                        </div>
-                                        <div style={{ fontSize: '11px', color: colors.textLight, fontWeight: '700' }}>{item.label}</div>
-                                    </div>
-                                ))}
-                            </div>
-                            
-                            {edit ? (
-                                <div style={{ marginTop: '24px' }}>
-                                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '13px', fontWeight: '700', color: colors.text, textTransform: 'uppercase' }}>Launch Date</label>
+                    {/* User Management Modal */}
+                    {showUserModal && (
+                        <div className="modal-overlay" onClick={() => setShowUserModal(false)}>
+                            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                                <h3 style={{ fontSize: '20px', fontWeight: '700', color: colors.primary, marginBottom: '20px' }}>Manage Users</h3>
+                                
+                                <div style={{ marginBottom: '24px' }}>
+                                    <h4 style={{ fontSize: '14px', fontWeight: '700', color: colors.text, marginBottom: '12px' }}>Add New User</h4>
                                     <input 
-                                        type="date" 
-                                        value={data.launch} 
-                                        onChange={(e) => updateField('launch', e.target.value)}
+                                        type="text" 
+                                        value={newUsername} 
+                                        onChange={(e) => setNewUsername(e.target.value)}
                                         className="edit-field"
-                                        style={{ maxWidth: '300px', margin: '0 auto' }}
+                                        placeholder="Username"
+                                        style={{ marginBottom: '12px' }}
                                     />
+                                    <input 
+                                        type="text" 
+                                        value={newPassword} 
+                                        onChange={(e) => setNewPassword(e.target.value)}
+                                        className="edit-field"
+                                        placeholder="Password"
+                                        style={{ marginBottom: '12px' }}
+                                    />
+                                    <button onClick={addUser} className="edit-btn edit-btn-add" style={{ width: '100%' }}>
+                                        <Plus size={12} color="white" style={{ display: 'inline', marginRight: '6px' }} />
+                                        Add User
+                                    </button>
                                 </div>
-                            ) : (
-                                <div style={{ padding: '16px', background: `${colors.accent}20`, borderRadius: '8px', fontSize: '14px', color: colors.primary, fontWeight: '700', border: `2px solid ${colors.accent}` }}>
-                                    TARGET LAUNCH: {new Date(data.launch).toLocaleDateString('en-US', { 
-                                        weekday: 'long', 
-                                        year: 'numeric', 
-                                        month: 'long', 
-                                        day: 'numeric' 
-                                    }).toUpperCase()}
-                                </div>
-                            )}
-                        </div>
 
-                        <div style={{ marginTop: '24px', padding: '24px', background: colors.white, borderRadius: '12px', border: `1px solid ${colors.border}` }}>
-                            <h3 style={{ fontSize: '18px', fontWeight: '700', color: colors.primary, marginBottom: '16px', textAlign: 'center', textTransform: 'uppercase' }}>
-                                {edit ? '✏️ Edit Mode Active' : '👁️ View Mode'}
-                            </h3>
-                            <p style={{ fontSize: '14px', color: colors.text, textAlign: 'center', lineHeight: '1.6' }}>
-                                {edit 
-                                    ? 'Click on any text field above to edit it. Changes save automatically to Firebase!' 
-                                    : 'Click "Edit Mode" button to start editing. All changes sync in real-time across users.'}
-                            </p>
-                            {isFirebaseConfigured && (
-                                <p style={{ fontSize: '12px', color: colors.success, textAlign: 'center', marginTop: '12px', fontWeight: '600' }}>
-                                    ✅ Connected to Firebase Project: {firebaseConfig.projectId}
-                                </p>
-                            )}
+                                <div>
+                                    <h4 style={{ fontSize: '14px', fontWeight: '700', color: colors.text, marginBottom: '12px' }}>Existing Users</h4>
+                                    <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                                        {Object.entries(users).map(([username, userData]) => (
+                                            <div key={username} style={{ padding: '12px', background: colors.bg, borderRadius: '8px', marginBottom: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <div>
+                                                    <div style={{ fontSize: '14px', fontWeight: '700', color: colors.primary }}>{username}</div>
+                                                    <div style={{ fontSize: '12px', color: colors.textLight }}>{userData.role}</div>
+                                                </div>
+                                                {username !== 'admin' && (
+                                                    <button onClick={() => deleteUser(username)} className="edit-btn edit-btn-delete">
+                                                        <Trash size={12} color="white" />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <button onClick={() => setShowUserModal(false)} style={{ marginTop: '20px', width: '100%', padding: '12px', background: colors.primary, color: colors.white, border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '700', cursor: 'pointer' }}>
+                                    Close
+                                </button>
+                            </div>
                         </div>
+                    )}
+
+                    {/* Tabs */}
+                    <div className="mobile-scroll" style={{ background: colors.white, borderBottom: `1px solid ${colors.border}`, padding: '0 24px', overflowX: 'auto' }}>
+                        <div style={{ display: 'flex', gap: '8px', minWidth: 'max-content' }}>
+                            {[
+                                { id: 'dashboard', label: 'Dashboard', icon: <BarChart size={16} /> },
+                                { id: 'timeline', label: 'Timeline', icon: <Calendar size={16} /> },
+                                { id: 'details', label: 'Details', icon: <FileText size={16} /> },
+                                { id: 'courses', label: 'Courses', icon: <Eye size={16} /> },
+                                { id: 'stakeholders', label: 'Team', icon: <Users size={16} /> }
+                            ].map(t => (
+                                <button key={t.id} onClick={() => setTab(t.id)} style={{ padding: '16px 24px', background: 'transparent', color: tab === t.id ? colors.primary : colors.textLight, border: 'none', borderBottom: tab === t.id ? `3px solid ${colors.accent}` : '3px solid transparent', cursor: 'pointer', fontSize: '13px', fontWeight: tab === t.id ? '700' : '600', display: 'flex', alignItems: 'center', gap: '8px', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.5px', transition: 'all 0.2s' }}>
+                                    {React.cloneElement(t.icon, { color: tab === t.id ? colors.primary : colors.textLight })}
+                                    {t.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Content */}
+                    <div style={{ padding: '24px' }}>
+                        {tab === 'dashboard' && (
+                            <div>
+                                {/* Title Bar */}
+                                <div style={{ background: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.secondary} 100%)`, padding: '24px 28px', borderRadius: '12px', marginBottom: '24px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', border: `1px solid ${colors.accent}` }}>
+                                    {edit ? (
+                                        <input 
+                                            type="text" 
+                                            value={data.title} 
+                                            onChange={(e) => updateField('title', e.target.value)}
+                                            className="edit-field"
+                                            style={{ fontSize: '28px', fontWeight: '700', color: colors.white, background: 'transparent', border: 'none', borderBottom: `3px solid ${colors.accent}`, outline: 'none', textAlign: 'left', textTransform: 'uppercase', letterSpacing: '-0.5px' }}
+                                        />
+                                    ) : (
+                                        <h2 style={{ fontSize: '28px', fontWeight: '700', color: colors.white, margin: 0, letterSpacing: '-0.5px', textTransform: 'uppercase' }}>{data.title}</h2>
+                                    )}
+                                    <p style={{ fontSize: '14px', color: colors.accent, margin: '4px 0 0 0', fontWeight: '600' }}>Project Dashboard</p>
+                                </div>
+
+                                {/* Countdown & Status */}
+                                <div className="mobile-stack" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '24px' }}>
+                                    {/* Countdown */}
+                                    <div style={{ background: colors.white, padding: '28px', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', border: `1px solid ${colors.border}` }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px', paddingBottom: '16px', borderBottom: `2px solid ${colors.accent}` }}>
+                                            <Clock size={24} color={colors.primary} />
+                                            <h3 style={{ fontSize: '16px', fontWeight: '700', color: colors.primary, margin: 0, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Launch Countdown</h3>
+                                        </div>
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', textAlign: 'center', marginBottom: '20px' }}>
+                                            {[{ label: 'DAYS', value: time.days }, { label: 'HRS', value: time.hours }, { label: 'MIN', value: time.minutes }, { label: 'SEC', value: time.seconds }].map((item, idx) => (
+                                                <div key={idx}>
+                                                    <div style={{ background: colors.primary, padding: '16px 8px', borderRadius: '8px', marginBottom: '8px', border: `2px solid ${colors.accent}` }}>
+                                                        <div style={{ fontSize: '24px', fontWeight: '700', color: colors.white }}>{String(item.value).padStart(2, '0')}</div>
+                                                    </div>
+                                                    <div style={{ fontSize: '10px', color: colors.textLight, fontWeight: '700', letterSpacing: '0.5px' }}>{item.label}</div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        {edit ? (
+                                            <div>
+                                                <label style={{ display: 'block', marginBottom: '8px', fontSize: '11px', fontWeight: '700', color: colors.text, textTransform: 'uppercase' }}>Launch Date</label>
+                                                <input 
+                                                    type="date" 
+                                                    value={data.launch} 
+                                                    onChange={(e) => updateField('launch', e.target.value)}
+                                                    className="edit-field"
+                                                />
+                                            </div>
+                                        ) : (
+                                            <div style={{ padding: '14px', background: `linear-gradient(135deg, ${colors.accent}15 0%, ${colors.accent}25 100%)`, borderRadius: '8px', fontSize: '13px', color: colors.primary, textAlign: 'center', fontWeight: '700', border: `1px solid ${colors.accent}` }}>
+                                                TARGET: {new Date(data.launch).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }).toUpperCase()}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Status */}
+                                    <div style={{ background: colors.white, padding: '28px', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', border: `1px solid ${colors.border}` }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px', paddingBottom: '16px', borderBottom: `2px solid ${colors.accent}` }}>
+                                            <Target size={24} color={colors.primary} />
+                                            <h3 style={{ fontSize: '16px', fontWeight: '700', color: colors.primary, margin: 0, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Project Status</h3>
+                                        </div>
+                                        <div style={{ position: 'relative', width: '180px', height: '110px', margin: '0 auto 20px' }}>
+                                            <svg width="180" height="110">
+                                                <path d="M 20 100 A 70 70 0 0 1 160 100" fill="none" stroke={`${colors.danger}40`} strokeWidth="18" />
+                                                <path d="M 20 100 A 70 70 0 0 1 90 30" fill="none" stroke={`${colors.warning}40`} strokeWidth="18" />
+                                                <path d="M 90 30 A 70 70 0 0 1 160 100" fill="none" stroke={`${colors.success}40`} strokeWidth="18" />
+                                            </svg>
+                                            <div style={{ position: 'absolute', width: '4px', height: '60px', background: colors.primary, bottom: '10px', left: '88px', transformOrigin: 'bottom center', transform: `rotate(${needle}deg)`, borderRadius: '2px', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>
+                                                <div style={{ width: '12px', height: '12px', background: colors.accent, borderRadius: '50%', position: 'absolute', bottom: '-6px', left: '-4px', border: `2px solid ${colors.primary}` }}></div>
+                                            </div>
+                                        </div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', fontWeight: '700', marginBottom: '20px', letterSpacing: '0.5px' }}>
+                                            <span style={{ color: colors.danger }}>AT RISK</span>
+                                            <span style={{ color: colors.warning }}>CAUTION</span>
+                                            <span style={{ color: colors.success }}>ON TRACK</span>
+                                        </div>
+                                        {edit ? (
+                                            <select 
+                                                value={data.status} 
+                                                onChange={(e) => updateField('status', e.target.value)}
+                                                className="edit-field"
+                                            >
+                                                <option value="green">On Track</option>
+                                                <option value="yellow">Needs Attention</option>
+                                                <option value="red">At Risk</option>
+                                            </select>
+                                        ) : (
+                                            <div style={{ padding: '14px', background: data.status === 'green' ? `${colors.success}15` : data.status === 'yellow' ? `${colors.warning}15` : `${colors.danger}15`, borderRadius: '8px', textAlign: 'center', border: `2px solid ${statusColor}` }}>
+                                                <div style={{ fontSize: '16px', fontWeight: '700', color: statusColor, letterSpacing: '0.5px' }}>
+                                                    {data.status === 'green' ? 'ON TRACK' : data.status === 'yellow' ? 'NEEDS ATTENTION' : 'AT RISK'}
+                                                </div>
+                                                <div style={{ fontSize: '11px', color: colors.textLight, marginTop: '4px', fontWeight: '600' }}>Overall Project Health</div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Milestones & Issues */}
+                                <div className="mobile-stack" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+                                    {/* Milestones */}
+                                    <div style={{ background: colors.white, padding: '28px', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', border: `1px solid ${colors.border}` }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', paddingBottom: '16px', borderBottom: `2px solid ${colors.accent}` }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                <CheckCircle size={24} color={colors.primary} />
+                                                <h3 style={{ fontSize: '16px', fontWeight: '700', color: colors.primary, margin: 0, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Key Milestones</h3>
+                                            </div>
+                                            {edit && (
+                                                <button onClick={() => addItem('milestones', { title: 'New Milestone', date: '2026-01-01', status: 'pending' })} className="edit-btn edit-btn-add">
+                                                    <Plus size={12} color="white" />
+                                                </button>
+                                            )}
+                                        </div>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                            {data.milestones.map(m => (
+                                                <div key={m.id} style={{ padding: '16px', background: colors.bg, borderRadius: '8px', borderLeft: `4px solid ${m.status === 'completed' ? colors.success : m.status === 'inProgress' ? colors.info : colors.textLight}`, border: `1px solid ${colors.border}`, borderLeft: `4px solid ${m.status === 'completed' ? colors.success : m.status === 'inProgress' ? colors.info : colors.textLight}` }}>
+                                                    {edit ? (
+                                                        <div>
+                                                            <input 
+                                                                type="text" 
+                                                                value={m.title} 
+                                                                onChange={(e) => updateArrayItem('milestones', m.id, 'title', e.target.value)}
+                                                                className="edit-field"
+                                                                style={{ marginBottom: '8px', fontSize: '13px' }}
+                                                            />
+                                                            <input 
+                                                                type="date" 
+                                                                value={m.date} 
+                                                                onChange={(e) => updateArrayItem('milestones', m.id, 'date', e.target.value)}
+                                                                className="edit-field"
+                                                                style={{ marginBottom: '8px', fontSize: '11px' }}
+                                                            />
+                                                            <div style={{ display: 'flex', gap: '8px' }}>
+                                                                <select 
+                                                                    value={m.status} 
+                                                                    onChange={(e) => updateArrayItem('milestones', m.id, 'status', e.target.value)}
+                                                                    className="edit-field"
+                                                                    style={{ fontSize: '11px' }}
+                                                                >
+                                                                    <option value="pending">Pending</option>
+                                                                    <option value="inProgress">In Progress</option>
+                                                                    <option value="completed">Completed</option>
+                                                                </select>
+                                                                <button onClick={() => deleteItem('milestones', m.id)} className="edit-btn edit-btn-delete">
+                                                                    <Trash size={12} color="white" />
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', gap: '12px' }}>
+                                                            <div style={{ flex: 1, minWidth: 0 }}>
+                                                                <div style={{ fontSize: '13px', fontWeight: '700', color: colors.text, marginBottom: '6px', wordWrap: 'break-word' }}>{m.title}</div>
+                                                                <div style={{ fontSize: '11px', color: colors.textLight, fontWeight: '600' }}>{new Date(m.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
+                                                            </div>
+                                                            <span style={{ padding: '4px 10px', background: m.status === 'completed' ? colors.success : m.status === 'inProgress' ? colors.info : colors.white, color: m.status === 'completed' || m.status === 'inProgress' ? colors.white : colors.textLight, borderRadius: '6px', fontSize: '9px', fontWeight: '700', whiteSpace: 'nowrap', border: m.status === 'pending' ? `1px solid ${colors.border}` : 'none', letterSpacing: '0.5px' }}>
+                                                                {m.status === 'completed' ? 'COMPLETE' : m.status === 'inProgress' ? 'ACTIVE' : 'PENDING'}
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Issues */}
+                                    <div style={{ background: colors.white, padding: '28px', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', border: `1px solid ${colors.border}` }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', paddingBottom: '16px', borderBottom: `2px solid ${colors.accent}` }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                <AlertCircle size={24} color={colors.primary} />
+                                                <h3 style={{ fontSize: '16px', fontWeight: '700', color: colors.primary, margin: 0, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Critical Issues</h3>
+                                            </div>
+                                            {edit && (
+                                                <button onClick={() => addItem('issues', { issue: 'New Issue', severity: 'medium', owner: 'Team' })} className="edit-btn edit-btn-add">
+                                                    <Plus size={12} color="white" />
+                                                </button>
+                                            )}
+                                        </div>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                            {data.issues.map(i => (
+                                                <div key={i.id} style={{ padding: '16px', background: i.severity === 'high' ? `${colors.danger}10` : `${colors.warning}10`, borderRadius: '8px', borderLeft: `4px solid ${i.severity === 'high' ? colors.danger : colors.warning}`, border: `1px solid ${i.severity === 'high' ? colors.danger : colors.warning}`, borderLeft: `4px solid ${i.severity === 'high' ? colors.danger : colors.warning}` }}>
+                                                    {edit ? (
+                                                        <div>
+                                                            <input 
+                                                                type="text" 
+                                                                value={i.issue} 
+                                                                onChange={(e) => updateArrayItem('issues', i.id, 'issue', e.target.value)}
+                                                                className="edit-field"
+                                                                style={{ marginBottom: '8px', fontSize: '13px' }}
+                                                            />
+                                                            <input 
+                                                                type="text" 
+                                                                value={i.owner} 
+                                                                onChange={(e) => updateArrayItem('issues', i.id, 'owner', e.target.value)}
+                                                                className="edit-field"
+                                                                style={{ marginBottom: '8px', fontSize: '11px' }}
+                                                            />
+                                                            <div style={{ display: 'flex', gap: '8px' }}>
+                                                                <select 
+                                                                    value={i.severity} 
+                                                                    onChange={(e) => updateArrayItem('issues', i.id, 'severity', e.target.value)}
+                                                                    className="edit-field"
+                                                                    style={{ fontSize: '11px' }}
+                                                                >
+                                                                    <option value="low">Low</option>
+                                                                    <option value="medium">Medium</option>
+                                                                    <option value="high">High</option>
+                                                                </select>
+                                                                <button onClick={() => deleteItem('issues', i.id)} className="edit-btn edit-btn-delete">
+                                                                    <Trash size={12} color="white" />
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <>
+                                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '8px', gap: '12px' }}>
+                                                                <div style={{ fontSize: '13px', fontWeight: '700', color: colors.text, flex: 1, wordWrap: 'break-word' }}>{i.issue}</div>
+                                                                <span style={{ padding: '4px 10px', background: i.severity === 'high' ? colors.danger : colors.warning, color: colors.white, borderRadius: '6px', fontSize: '9px', fontWeight: '700', whiteSpace: 'nowrap', letterSpacing: '0.5px' }}>
+                                                                    {i.severity.toUpperCase()}
+                                                                </span>
+                                                            </div>
+                                                            <div style={{ fontSize: '11px', color: colors.textLight, fontWeight: '600' }}>OWNER: {i.owner.toUpperCase()}</div>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {tab === 'timeline' && (
+                            <div style={{ background: colors.white, padding: '32px', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', border: `1px solid ${colors.border}` }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+                                    <div>
+                                        <h2 style={{ fontSize: '24px', fontWeight: '700', color: colors.primary, marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '-0.5px' }}>Project Timeline</h2>
+                                        <p style={{ fontSize: '13px', color: colors.textLight, fontWeight: '600' }}>Gantt-style progress overview</p>
+                                    </div>
+                                    {edit && (
+                                        <button onClick={() => addItem('timeline', { phase: 'New Phase', start: '2026-01-01', end: '2026-01-15', progress: 0 })} className="edit-btn edit-btn-add">
+                                            <Plus size={12} color="white" /> Add Phase
+                                        </button>
+                                    )}
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                                    {data.timeline.map((p, idx) => (
+                                        <div key={p.id}>
+                                            {edit ? (
+                                                <div style={{ padding: '20px', background: colors.bg, borderRadius: '8px', marginBottom: '12px' }}>
+                                                    <input 
+                                                        type="text" 
+                                                        value={p.phase} 
+                                                        onChange={(e) => updateArrayItem('timeline', p.id, 'phase', e.target.value)}
+                                                        className="edit-field"
+                                                        style={{ marginBottom: '12px' }}
+                                                    />
+                                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                                                        <input 
+                                                            type="date" 
+                                                            value={p.start} 
+                                                            onChange={(e) => updateArrayItem('timeline', p.id, 'start', e.target.value)}
+                                                            className="edit-field"
+                                                        />
+                                                        <input 
+                                                            type="date" 
+                                                            value={p.end} 
+                                                            onChange={(e) => updateArrayItem('timeline', p.id, 'end', e.target.value)}
+                                                            className="edit-field"
+                                                        />
+                                                        <input 
+                                                            type="number" 
+                                                            min="0" 
+                                                            max="100" 
+                                                            value={p.progress} 
+                                                            onChange={(e) => updateArrayItem('timeline', p.id, 'progress', parseInt(e.target.value))}
+                                                            className="edit-field"
+                                                            placeholder="Progress %"
+                                                        />
+                                                    </div>
+                                                    <button onClick={() => deleteItem('timeline', p.id)} className="edit-btn edit-btn-delete" style={{ width: '100%' }}>
+                                                        <Trash size={12} color="white" /> Delete Phase
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', flexWrap: 'wrap', gap: '12px' }}>
+                                                    <div style={{ flex: 1, minWidth: '200px' }}>
+                                                        <div style={{ fontSize: '15px', fontWeight: '700', color: colors.primary, marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.3px' }}>{p.phase}</div>
+                                                        <div style={{ fontSize: '12px', color: colors.textLight, fontWeight: '600' }}>
+                                                            {new Date(p.start).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {new Date(p.end).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                                        </div>
+                                                    </div>
+                                                    <div style={{ fontSize: '20px', fontWeight: '700', color: p.progress === 100 ? colors.success : p.progress > 0 ? colors.info : colors.textLight }}>{p.progress}%</div>
+                                                </div>
+                                            )}
+                                            <div style={{ width: '100%', height: '32px', background: colors.bg, borderRadius: '8px', overflow: 'hidden', border: `1px solid ${colors.border}` }}>
+                                                <div style={{ width: `${p.progress}%`, height: '100%', background: p.progress === 100 ? colors.success : p.progress > 0 ? `linear-gradient(90deg, ${colors.primary} 0%, ${colors.info} 100%)` : colors.textLight, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: '12px', transition: 'width 0.5s ease' }}>
+                                                    {p.progress > 0 && <span style={{ color: colors.white, fontSize: '12px', fontWeight: '700', letterSpacing: '0.5px' }}>{p.progress}%</span>}
+                                                </div>
+                                            </div>
+                                            {idx < data.timeline.length - 1 && <div style={{ width: '3px', height: '24px', background: colors.accent, margin: '12px 0 0 16px', borderRadius: '2px' }}></div>}
+                                        </div>
+                                    ))}
+                                </div>
+                                <div style={{ marginTop: '32px', padding: '20px', background: colors.bg, borderRadius: '8px', display: 'flex', gap: '24px', justifyContent: 'center', flexWrap: 'wrap', border: `1px solid ${colors.border}` }}>
+                                    {[{ color: colors.success, label: 'Completed' }, { color: colors.info, label: 'In Progress' }, { color: colors.textLight, label: 'Not Started' }].map(l => (
+                                        <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <div style={{ width: '16px', height: '16px', background: l.color, borderRadius: '4px', border: `2px solid ${colors.white}`, boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}></div>
+                                            <span style={{ fontSize: '12px', color: colors.text, fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{l.label}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {tab === 'details' && (
+                            <div style={{ background: colors.white, padding: '32px', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', border: `1px solid ${colors.border}` }}>
+                                <h2 style={{ fontSize: '24px', fontWeight: '700', color: colors.primary, marginBottom: '32px', textTransform: 'uppercase', letterSpacing: '-0.5px' }}>Project Details</h2>
+                                <div className="mobile-stack" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '40px' }}>
+                                    {Object.entries(data.details).map(([k, v]) => (
+                                        <div key={k} style={{ padding: '24px', background: colors.bg, borderRadius: '8px', border: `1px solid ${colors.border}` }}>
+                                            <div style={{ fontSize: '11px', fontWeight: '700', color: colors.textLight, textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '10px' }}>
+                                                {k.replace(/([A-Z])/g, ' $1').trim()}
+                                            </div>
+                                            {edit ? (
+                                                <input 
+                                                    type="text" 
+                                                    value={v} 
+                                                    onChange={(e) => updateField(`details.${k}`, e.target.value)}
+                                                    className="edit-field"
+                                                />
+                                            ) : (
+                                                <div style={{ fontSize: '16px', fontWeight: '700', color: colors.primary, wordWrap: 'break-word' }}>{v}</div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                                <div style={{ borderTop: `2px solid ${colors.accent}`, paddingTop: '32px' }}>
+                                    <h3 style={{ fontSize: '20px', fontWeight: '700', color: colors.primary, marginBottom: '20px', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Detailed Milestones</h3>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                                        {data.milestones.map(m => (
+                                            <div key={m.id} style={{ padding: '20px', background: colors.bg, borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', border: `1px solid ${colors.border}` }}>
+                                                <div>
+                                                    <div style={{ fontSize: '14px', fontWeight: '700', color: colors.primary, marginBottom: '6px' }}>{m.title}</div>
+                                                    <div style={{ fontSize: '12px', color: colors.textLight, fontWeight: '600' }}>DUE: {new Date(m.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase()}</div>
+                                                </div>
+                                                <span style={{ padding: '6px 16px', background: m.status === 'completed' ? colors.success : m.status === 'inProgress' ? colors.info : colors.white, color: m.status === 'completed' || m.status === 'inProgress' ? colors.white : colors.textLight, border: m.status === 'pending' ? `2px solid ${colors.border}` : 'none', borderRadius: '6px', fontSize: '11px', fontWeight: '700', letterSpacing: '0.5px' }}>
+                                                    {m.status === 'completed' ? 'COMPLETED' : m.status === 'inProgress' ? 'IN PROGRESS' : 'PENDING'}
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {tab === 'courses' && (
+                            <div style={{ background: colors.white, padding: '32px', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', border: `1px solid ${colors.border}` }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+                                    <div>
+                                        <h2 style={{ fontSize: '24px', fontWeight: '700', color: colors.primary, marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '-0.5px' }}>Course Visualizer</h2>
+                                        <p style={{ fontSize: '13px', color: colors.textLight, fontWeight: '600' }}>5-Course Online Program Structure</p>
+                                    </div>
+                                    {edit && (
+                                        <button onClick={() => addItem('courses', { title: 'New Course', mandatory: false, duration: '4 weeks', modules: 6, status: 'Planning', desc: 'Course description' })} className="edit-btn edit-btn-add">
+                                            <Plus size={12} color="white" /> Add Course
+                                        </button>
+                                    )}
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '40px' }}>
+                                    {data.courses.map((c, idx) => (
+                                        <div key={c.id} style={{ padding: '24px', background: c.mandatory ? `${colors.accent}15` : colors.bg, border: c.mandatory ? `2px solid ${colors.accent}` : `1px solid ${colors.border}`, borderRadius: '12px', position: 'relative' }}>
+                                            {c.mandatory && !edit && (
+                                                <div style={{ position: 'absolute', top: '-12px', left: '20px', background: colors.accent, color: colors.primary, padding: '4px 16px', borderRadius: '6px', fontSize: '10px', fontWeight: '700', letterSpacing: '0.8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+                                                    MANDATORY · COURSE {c.id}
+                                                </div>
+                                            )}
+                                            {edit ? (
+                                                <div>
+                                                    <input 
+                                                        type="text" 
+                                                        value={c.title} 
+                                                        onChange={(e) => updateArrayItem('courses', c.id, 'title', e.target.value)}
+                                                        className="edit-field"
+                                                        style={{ marginBottom: '12px' }}
+                                                        placeholder="Course Title"
+                                                    />
+                                                    <textarea 
+                                                        value={c.desc} 
+                                                        onChange={(e) => updateArrayItem('courses', c.id, 'desc', e.target.value)}
+                                                        className="edit-field"
+                                                        style={{ marginBottom: '12px', minHeight: '60px' }}
+                                                        placeholder="Course Description"
+                                                    />
+                                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                                                        <input 
+                                                            type="text" 
+                                                            value={c.duration} 
+                                                            onChange={(e) => updateArrayItem('courses', c.id, 'duration', e.target.value)}
+                                                            className="edit-field"
+                                                            placeholder="Duration"
+                                                        />
+                                                        <input 
+                                                            type="number" 
+                                                            value={c.modules} 
+                                                            onChange={(e) => updateArrayItem('courses', c.id, 'modules', parseInt(e.target.value))}
+                                                            className="edit-field"
+                                                            placeholder="Modules"
+                                                        />
+                                                        <select 
+                                                            value={c.status} 
+                                                            onChange={(e) => updateArrayItem('courses', c.id, 'status', e.target.value)}
+                                                            className="edit-field"
+                                                        >
+                                                            <option value="Planning">Planning</option>
+                                                            <option value="Design">Design</option>
+                                                            <option value="Development">Development</option>
+                                                            <option value="Complete">Complete</option>
+                                                        </select>
+                                                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: colors.white, borderRadius: '6px', border: `2px solid ${colors.accent}` }}>
+                                                            <input 
+                                                                type="checkbox" 
+                                                                checked={c.mandatory} 
+                                                                onChange={(e) => updateArrayItem('courses', c.id, 'mandatory', e.target.checked)}
+                                                            />
+                                                            <span style={{ fontSize: '12px', fontWeight: '700' }}>Mandatory</span>
+                                                        </label>
+                                                    </div>
+                                                    <button onClick={() => deleteItem('courses', c.id)} className="edit-btn edit-btn-delete" style={{ width: '100%' }}>
+                                                        <Trash size={12} color="white" /> Delete Course
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <div className="mobile-stack" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: '16px', alignItems: 'start' }}>
+                                                    <div>
+                                                        <div style={{ fontSize: '11px', fontWeight: '700', color: colors.textLight, marginBottom: '6px', letterSpacing: '0.5px' }}>COURSE {c.id}</div>
+                                                        <div style={{ fontSize: '16px', fontWeight: '700', color: colors.primary, marginBottom: '8px' }}>{c.title}</div>
+                                                        <div style={{ fontSize: '12px', color: colors.textLight, lineHeight: '1.6', fontWeight: '500' }}>{c.desc}</div>
+                                                    </div>
+                                                    <div>
+                                                        <div style={{ fontSize: '10px', fontWeight: '700', color: colors.textLight, textTransform: 'uppercase', marginBottom: '6px', letterSpacing: '0.5px' }}>Duration</div>
+                                                        <div style={{ fontSize: '14px', fontWeight: '700', color: colors.primary }}>{c.duration}</div>
+                                                    </div>
+                                                    <div>
+                                                        <div style={{ fontSize: '10px', fontWeight: '700', color: colors.textLight, textTransform: 'uppercase', marginBottom: '6px', letterSpacing: '0.5px' }}>Modules</div>
+                                                        <div style={{ fontSize: '14px', fontWeight: '700', color: colors.primary }}>{c.modules}</div>
+                                                    </div>
+                                                    <div>
+                                                        <div style={{ fontSize: '10px', fontWeight: '700', color: colors.textLight, textTransform: 'uppercase', marginBottom: '6px', letterSpacing: '0.5px' }}>Status</div>
+                                                        <span style={{ padding: '5px 12px', background: c.status === 'Development' ? colors.info : c.status === 'Design' ? colors.warning : colors.textLight, color: colors.white, borderRadius: '6px', fontSize: '10px', fontWeight: '700', display: 'inline-block', letterSpacing: '0.5px' }}>
+                                                            {c.status.toUpperCase()}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                                <div style={{ padding: '32px', background: colors.bg, borderRadius: '12px', border: `2px solid ${colors.accent}` }}>
+                                    <h3 style={{ fontSize: '18px', fontWeight: '700', color: colors.primary, marginBottom: '24px', textAlign: 'center', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Student Course Flow</h3>
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '16px', flexWrap: 'wrap' }}>
+                                        <div style={{ padding: '16px 20px', background: colors.accent, color: colors.primary, borderRadius: '8px', fontWeight: '700', fontSize: '13px', textAlign: 'center', border: `2px solid ${colors.primary}`, letterSpacing: '0.3px' }}>COURSE 1<br /><span style={{ fontSize: '10px' }}>(MANDATORY)</span></div>
+                                        <div style={{ fontSize: '24px', color: colors.accent, fontWeight: '700' }}>→</div>
+                                        <div style={{ padding: '16px 20px', background: colors.white, borderRadius: '8px', border: `2px dashed ${colors.secondary}`, textAlign: 'center' }}>
+                                            <div style={{ fontSize: '13px', fontWeight: '700', color: colors.primary, marginBottom: '6px', letterSpacing: '0.3px' }}>STUDENT CHOICE</div>
+                                            <div style={{ fontSize: '10px', color: colors.textLight, fontWeight: '600' }}>Any Order</div>
+                                        </div>
+                                        <div style={{ fontSize: '24px', color: colors.accent, fontWeight: '700' }}>→</div>
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
+                                            {['C2', 'C3', 'C4', 'C5'].map(c => (
+                                                <div key={c} style={{ padding: '12px 18px', background: colors.white, border: `2px solid ${colors.primary}`, borderRadius: '8px', fontWeight: '700', fontSize: '12px', color: colors.primary, textAlign: 'center', letterSpacing: '0.5px' }}>
+                                                    {c}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {tab === 'stakeholders' && (
+                            <div style={{ background: colors.white, padding: '32px', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', border: `1px solid ${colors.border}` }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+                                    <EditableLabel 
+                                        labelKey="stakeholdersHeader" 
+                                        style={{ fontSize: '24px', fontWeight: '700', color: colors.primary, textTransform: 'uppercase', letterSpacing: '-0.5px' }}
+                                        onClick={() => setShowLabelModal(true)}
+                                    />
+                                    {edit && (
+                                        <button onClick={() => addItem('stakeholders', { name: 'New Stakeholder', role: 'Role', contact: 'email@ra.ac.ae' })} className="edit-btn edit-btn-add">
+                                            <Plus size={12} color="white" /> {labels.addStakeholder}
+                                        </button>
+                                    )}
+                                </div>
+                                <div style={{ display: 'grid', gap: '16px', marginBottom: '40px' }}>
+                                    {data.stakeholders.map(s => (
+                                        <div key={s.id} style={{ padding: '20px', background: colors.bg, borderRadius: '8px', border: `1px solid ${colors.border}` }}>
+                                            {edit ? (
+                                                <div>
+                                                    <input 
+                                                        type="text" 
+                                                        value={s.name} 
+                                                        onChange={(e) => updateArrayItem('stakeholders', s.id, 'name', e.target.value)}
+                                                        className="edit-field"
+                                                        style={{ marginBottom: '12px' }}
+                                                        placeholder="Name"
+                                                    />
+                                                    <input 
+                                                        type="text" 
+                                                        value={s.role} 
+                                                        onChange={(e) => updateArrayItem('stakeholders', s.id, 'role', e.target.value)}
+                                                        className="edit-field"
+                                                        style={{ marginBottom: '12px' }}
+                                                        placeholder="Role"
+                                                    />
+                                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                                        <input 
+                                                            type="email" 
+                                                            value={s.contact} 
+                                                            onChange={(e) => updateArrayItem('stakeholders', s.id, 'contact', e.target.value)}
+                                                            className="edit-field"
+                                                            placeholder="Contact Email"
+                                                        />
+                                                        <button onClick={() => deleteItem('stakeholders', s.id)} className="edit-btn edit-btn-delete">
+                                                            <Trash size={12} color="white" />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="mobile-stack" style={{ display: 'grid', gridTemplateColumns: '2fr 2fr 3fr', gap: '16px', alignItems: 'center' }}>
+                                                    <div>
+                                                        <div style={{ fontSize: '15px', fontWeight: '700', color: colors.primary, marginBottom: '4px', wordWrap: 'break-word' }}>{s.name}</div>
+                                                    </div>
+                                                    <div>
+                                                        <div style={{ fontSize: '10px', fontWeight: '700', color: colors.textLight, textTransform: 'uppercase', marginBottom: '4px', letterSpacing: '0.5px' }}>Role</div>
+                                                        <div style={{ fontSize: '13px', fontWeight: '700', color: colors.text }}>{s.role}</div>
+                                                    </div>
+                                                    <div>
+                                                        <div style={{ fontSize: '10px', fontWeight: '700', color: colors.textLight, textTransform: 'uppercase', marginBottom: '4px', letterSpacing: '0.5px' }}>Contact</div>
+                                                        <a href={`mailto:${s.contact}`} style={{ fontSize: '12px', color: colors.secondary, textDecoration: 'none', fontWeight: '600', wordBreak: 'break-all' }}>{s.contact}</a>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                                <div style={{ borderTop: `2px solid ${colors.accent}`, paddingTop: '32px' }}>
+                                    <EditableLabel 
+                                        labelKey="stakeholdersTeamHeader" 
+                                        style={{ fontSize: '20px', fontWeight: '700', color: colors.primary, marginBottom: '20px', textTransform: 'uppercase', letterSpacing: '0.3px', display: 'block' }}
+                                        onClick={() => setShowLabelModal(true)}
+                                    />
+                                    <div style={{ padding: '28px', background: colors.bg, borderRadius: '12px', border: `1px solid ${colors.border}` }}>
+                                        <div className="mobile-stack" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px' }}>
+                                            {[{ num: data.details.team.split(' ')[0], label: 'Team Members', color: colors.primary }, { num: data.stakeholders.length.toString(), label: 'Key Stakeholders', color: colors.accent }, { num: '5', label: 'Departments', color: colors.primary }].map(t => (
+                                                <div key={t.label} style={{ textAlign: 'center' }}>
+                                                    <div style={{ fontSize: '40px', fontWeight: '700', color: t.color, marginBottom: '8px', letterSpacing: '-1px' }}>{t.num}</div>
+                                                    <div style={{ fontSize: '11px', color: colors.textLight, fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{t.label}</div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             );
