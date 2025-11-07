@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stress Relief App - Mockup</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 30px;
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            text-align: center;
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 0.9em;
+        }
+
+        .activity-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .activity-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 20px;
+            padding: 30px 20px;
+            color: white;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            text-align: center;
+        }
+
+        .activity-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .icon {
+            font-size: 2.5em;
+        }
+
+        .btn-breathe {
+            background: linear-gradient(135deg, #56CCF2 0%, #2F80ED 100%);
+        }
+
+        .btn-bubbles {
+            background: linear-gradient(135deg, #F093FB 0%, #F5576C 100%);
+        }
+
+        .btn-zen {
+            background: linear-gradient(135deg, #4FACFE 0%, #00F2FE 100%);
+        }
+
+        .btn-music {
+            background: linear-gradient(135deg, #43E97B 0%, #38F9D7 100%);
+        }
+
+        .btn-smash {
+            background: linear-gradient(135deg, #FA709A 0%, #FEE140 100%);
+        }
+
+        .btn-affirmation {
+            background: linear-gradient(135deg, #30CFD0 0%, #330867 100%);
+        }
+
+        .preview-area {
+            background: #f5f5f5;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .preview-text {
+            color: #666;
+            font-style: italic;
+        }
+
+        .feature-list {
+            background: #f9f9f9;
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .feature-list h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+
+        .feature-list ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .feature-list li {
+            padding: 8px 0;
+            color: #555;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .feature-list li:before {
+            content: "✓";
+            color: #43E97B;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+
+        .note {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 5px;
+            font-size: 0.9em;
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌈 Stress Relief</h1>
+        <p class="subtitle">One tap to instant calm</p>
+
+        <div class="activity-grid">
+            <button class="activity-btn btn-breathe">
+                <span class="icon">🫁</span>
+                <span>Breathe</span>
+            </button>
+
+            <button class="activity-btn btn-bubbles">
+                <span class="icon">🫧</span>
+                <span>Pop Bubbles</span>
+            </button>
+
+            <button class="activity-btn btn-zen">
+                <span class="icon">🎨</span>
+                <span>Zen Draw</span>
+            </button>
+
+            <button class="activity-btn btn-music">
+                <span class="icon">🎵</span>
+                <span>Calm Sounds</span>
+            </button>
+
+            <button class="activity-btn btn-smash">
+                <span class="icon">💥</span>
+                <span>Smash It</span>
+            </button>
+
+            <button class="activity-btn btn-affirmation">
+                <span class="icon">💝</span>
+                <span>Affirmations</span>
+            </button>
+        </div>
+
+        <div class="feature-list">
+            <h3>Features:</h3>
+            <ul>
+                <li>Guided breathing exercises with animations</li>
+                <li>Satisfying bubble popping with sounds</li>
+                <li>Zen drawing canvas with colors</li>
+                <li>Calming nature sounds and music</li>
+                <li>Stress-smashing game (tap objects to destroy)</li>
+                <li>Random positive affirmations</li>
+            </ul>
+        </div>
+
+        <div class="note">
+            <strong>📱 Design Preview:</strong> This mockup shows the app layout and activities. Each button will be one-touch activated with instant, no-brainer stress relief! Colors are calming and interactions are satisfying.
+        </div>
+    </div>
+</body>
+</html>
