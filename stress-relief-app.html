@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stress Relief App</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #2C3E50 0%, #34495E 100%);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            background: rgba(245, 245, 245, 0.98);
+            border-radius: 30px;
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            margin: 20px auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+            min-height: 600px;
+            position: relative;
+        }
+
+        h1 {
+            text-align: center;
+            color: #4A6FA5;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 0.9em;
+        }
+
+        .activity-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .activity-btn {
+            background: linear-gradient(135deg, #5B7C99 0%, #4A6FA5 100%);
+            border: none;
+            border-radius: 20px;
+            padding: 30px 20px;
+            color: white;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            text-align: center;
+        }
+
+        .activity-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(74, 111, 165, 0.5);
+        }
+
+        .activity-btn:active {
+            transform: translateY(-2px);
+        }
+
+        .icon {
+            font-size: 2.5em;
+        }
+
+        .btn-breathe {
+            background: linear-gradient(135deg, #5B7C99 0%, #4A6FA5 100%);
+        }
+
+        .btn-bubbles {
+            background: linear-gradient(135deg, #7F8C8D 0%, #95A5A6 100%);
+        }
+
+        .btn-zen {
+            background: linear-gradient(135deg, #B8860B 0%, #CD9B1D 100%);
+        }
+
+        .btn-music {
+            background: linear-gradient(135deg, #5B7C99 0%, #34495E 100%);
+        }
+
+        .btn-smash {
+            background: linear-gradient(135deg, #A0826D 0%, #8B7355 100%);
+        }
+
+        .btn-affirmation {
+            background: linear-gradient(135deg, #4A6FA5 0%, #2C3E50 100%);
+        }
+
+        .screen {
+            display: none;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        .back-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: #7F8C8D;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 1.5em;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+
+        .back-btn:hover {
+            background: #6C7A7B;
+        }
+
+        /* Breathe Screen */
+        .breathe-circle {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #5B7C99 0%, #4A6FA5 100%);
+            margin: 60px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5em;
+            font-weight: bold;
+            transition: transform 4s ease-in-out;
+        }
+
+        .breathe-circle.inhale {
+            transform: scale(1.5);
+        }
+
+        .breathe-circle.exhale {
+            transform: scale(1);
+        }
+
+        .breathe-text {
+            text-align: center;
+            color: #4A6FA5;
+            font-size: 1.2em;
+            margin-top: 20px;
+        }
+
+        /* Bubbles Screen */
+        .bubbles-canvas {
+            width: 100%;
+            height: 450px;
+            cursor: pointer;
+            background: linear-gradient(180deg, #E8F4F8 0%, #D6E9F0 100%);
+            border-radius: 15px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .bubble {
+            position: absolute;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.8), rgba(91, 124, 153, 0.6));
+            cursor: pointer;
+            animation: float-up 4s ease-in infinite;
+        }
+
+        @keyframes float-up {
+            0% {
+                transform: translateY(0) translateX(0);
+            }
+            50% {
+                transform: translateY(-20px) translateX(10px);
+            }
+            100% {
+                transform: translateY(0) translateX(0);
+            }
+        }
+
+        @keyframes pop {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(2);
+                opacity: 0;
+            }
+        }
+
+        /* Zen Draw Screen */
+        .zen-canvas {
+            width: 100%;
+            height: 400px;
+            border-radius: 15px;
+            cursor: crosshair;
+            background: white;
+        }
+
+        .color-palette {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 15px;
+        }
+
+        .color-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 3px solid transparent;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .color-btn:hover, .color-btn.active {
+            transform: scale(1.2);
+            border-color: #2C3E50;
+        }
+
+        .clear-btn {
+            display: block;
+            margin: 15px auto 0;
+            padding: 10px 30px;
+            background: #7F8C8D;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1em;
+        }
+
+        .clear-btn:hover {
+            background: #6C7A7B;
+        }
+
+        /* Music Screen */
+        .sound-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 40px;
+        }
+
+        .sound-btn {
+            padding: 40px 20px;
+            background: linear-gradient(135deg, #5B7C99 0%, #4A6FA5 100%);
+            color: white;
+            border: none;
+            border-radius: 15px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .sound-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(74, 111, 165, 0.4);
+        }
+
+        .sound-btn.playing {
+            background: linear-gradient(135deg, #B8860B 0%, #CD9B1D 100%);
+        }
+
+        /* Smash Screen */
+        .smash-area {
+            width: 100%;
+            height: 450px;
+            background: linear-gradient(180deg, #E8E8E8 0%, #D6D6D6 100%);
+            border-radius: 15px;
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        .smash-object {
+            position: absolute;
+            font-size: 3em;
+            cursor: pointer;
+            animation: wobble 1s ease-in-out infinite;
+            user-select: none;
+        }
+
+        @keyframes wobble {
+            0%, 100% {
+                transform: rotate(-5deg);
+            }
+            50% {
+                transform: rotate(5deg);
+            }
+        }
+
+        @keyframes smash {
+            0% {
+                transform: scale(1) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(0) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        .score {
+            text-align: center;
+            color: #4A6FA5;
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        /* Affirmation Screen */
+        .affirmation-box {
+            background: linear-gradient(135deg, #5B7C99 0%, #4A6FA5 100%);
+            color: white;
+            padding: 60px 40px;
+            border-radius: 20px;
+            text-align: center;
+            font-size: 1.5em;
+            line-height: 1.6;
+            margin-top: 40px;
+            min-height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .new-affirmation-btn {
+            display: block;
+            margin: 30px auto 0;
+            padding: 15px 40px;
+            background: #B8860B;
+            color: white;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        .new-affirmation-btn:hover {
+            background: #CD9B1D;
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Main Menu Screen -->
+        <div id="menu-screen" class="screen active">
+            <h1>🌈 Stress Relief</h1>
+            <p class="subtitle">One tap to instant calm</p>
+
+            <div class="activity-grid">
+                <button class="activity-btn btn-breathe" onclick="showScreen('breathe')">
+                    <span class="icon">🫁</span>
+                    <span>Breathe</span>
+                </button>
+
+                <button class="activity-btn btn-bubbles" onclick="showScreen('bubbles')">
+                    <span class="icon">🫧</span>
+                    <span>Pop Bubbles</span>
+                </button>
+
+                <button class="activity-btn btn-zen" onclick="showScreen('zen')">
+                    <span class="icon">🎨</span>
+                    <span>Zen Draw</span>
+                </button>
+
+                <button class="activity-btn btn-music" onclick="showScreen('music')">
+                    <span class="icon">🎵</span>
+                    <span>Calm Sounds</span>
+                </button>
+
+                <button class="activity-btn btn-smash" onclick="showScreen('smash')">
+                    <span class="icon">💥</span>
+                    <span>Smash It</span>
+                </button>
+
+                <button class="activity-btn btn-affirmation" onclick="showScreen('affirmation')">
+                    <span class="icon">💝</span>
+                    <span>Affirmations</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Breathe Screen -->
+        <div id="breathe-screen" class="screen">
+            <button class="back-btn" onclick="showScreen('menu')">←</button>
+            <h2 style="text-align: center; color: #4A6FA5; margin-top: 50px;">Deep Breathing</h2>
+            <div class="breathe-circle" id="breatheCircle">Breathe</div>
+            <div class="breathe-text" id="breatheText">Get Ready...</div>
+        </div>
+
+        <!-- Bubbles Screen -->
+        <div id="bubbles-screen" class="screen">
+            <button class="back-btn" onclick="showScreen('menu')">←</button>
+            <h2 style="text-align: center; color: #4A6FA5; margin-top: 50px; margin-bottom: 20px;">Pop the Bubbles</h2>
+            <div class="bubbles-canvas" id="bubblesCanvas"></div>
+        </div>
+
+        <!-- Zen Draw Screen -->
+        <div id="zen-screen" class="screen">
+            <button class="back-btn" onclick="showScreen('menu')">←</button>
+            <h2 style="text-align: center; color: #4A6FA5; margin-top: 50px; margin-bottom: 20px;">Zen Drawing</h2>
+            <canvas id="zenCanvas" class="zen-canvas"></canvas>
+            <div class="color-palette">
+                <div class="color-btn active" style="background: #4A6FA5;" onclick="selectColor('#4A6FA5')"></div>
+                <div class="color-btn" style="background: #B8860B;" onclick="selectColor('#B8860B')"></div>
+                <div class="color-btn" style="background: #7F8C8D;" onclick="selectColor('#7F8C8D')"></div>
+                <div class="color-btn" style="background: #A0826D;" onclick="selectColor('#A0826D')"></div>
+                <div class="color-btn" style="background: #2C3E50;" onclick="selectColor('#2C3E50')"></div>
+            </div>
+            <button class="clear-btn" onclick="clearCanvas()">Clear Canvas</button>
+        </div>
+
+        <!-- Music Screen -->
+        <div id="music-screen" class="screen">
+            <button class="back-btn" onclick="showScreen('menu')">←</button>
+            <h2 style="text-align: center; color: #4A6FA5; margin-top: 50px;">Calming Sounds</h2>
+            <div class="sound-grid">
+                <button class="sound-btn" onclick="toggleSound('rain')" id="sound-rain">
+                    <span style="font-size: 2em;">🌧️</span>
+                    <span>Rain</span>
+                </button>
+                <button class="sound-btn" onclick="toggleSound('ocean')" id="sound-ocean">
+                    <span style="font-size: 2em;">🌊</span>
+                    <span>Ocean</span>
+                </button>
+                <button class="sound-btn" onclick="toggleSound('forest')" id="sound-forest">
+                    <span style="font-size: 2em;">🌲</span>
+                    <span>Forest</span>
+                </button>
+                <button class="sound-btn" onclick="toggleSound('fire')" id="sound-fire">
+                    <span style="font-size: 2em;">🔥</span>
+                    <span>Fire</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Smash Screen -->
+        <div id="smash-screen" class="screen">
+            <button class="back-btn" onclick="showScreen('menu')">←</button>
+            <h2 style="text-align: center; color: #4A6FA5; margin-top: 50px; margin-bottom: 10px;">Smash Your Stress!</h2>
+            <div class="score" id="smashScore">Score: 0</div>
+            <div class="smash-area" id="smashArea"></div>
+        </div>
+
+        <!-- Affirmation Screen -->
+        <div id="affirmation-screen" class="screen">
+            <button class="back-btn" onclick="showScreen('menu')">←</button>
+            <h2 style="text-align: center; color: #4A6FA5; margin-top: 50px;">Your Affirmation</h2>
+            <div class="affirmation-box" id="affirmationText"></div>
+            <button class="new-affirmation-btn" onclick="newAffirmation()">New Affirmation</button>
+        </div>
+    </div>
+
+    <script>
+        // Screen Navigation
+        function showScreen(screenName) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+
+            if (screenName === 'menu') {
+                document.getElementById('menu-screen').classList.add('active');
+                stopAllSounds();
+            } else if (screenName === 'breathe') {
+                document.getElementById('breathe-screen').classList.add('active');
+                startBreathing();
+            } else if (screenName === 'bubbles') {
+                document.getElementById('bubbles-screen').classList.add('active');
+                startBubbles();
+            } else if (screenName === 'zen') {
+                document.getElementById('zen-screen').classList.add('active');
+                initZenCanvas();
+            } else if (screenName === 'music') {
+                document.getElementById('music-screen').classList.add('active');
+            } else if (screenName === 'smash') {
+                document.getElementById('smash-screen').classList.add('active');
+                startSmashGame();
+            } else if (screenName === 'affirmation') {
+                document.getElementById('affirmation-screen').classList.add('active');
+                newAffirmation();
+            }
+        }
+
+        // ===== BREATHE ACTIVITY =====
+        let breatheInterval;
+
+        function startBreathing() {
+            const circle = document.getElementById('breatheCircle');
+            const text = document.getElementById('breatheText');
+            let phase = 0;
+
+            setTimeout(() => {
+                breatheInterval = setInterval(() => {
+                    if (phase === 0) {
+                        circle.classList.add('inhale');
+                        circle.classList.remove('exhale');
+                        text.textContent = 'Breathe In...';
+                        phase = 1;
+                    } else if (phase === 1) {
+                        text.textContent = 'Hold...';
+                        phase = 2;
+                    } else {
+                        circle.classList.remove('inhale');
+                        circle.classList.add('exhale');
+                        text.textContent = 'Breathe Out...';
+                        phase = 0;
+                    }
+                }, 4000);
+            }, 500);
+        }
+
+        // ===== BUBBLES ACTIVITY =====
+        let bubblesInterval;
+
+        function startBubbles() {
+            const canvas = document.getElementById('bubblesCanvas');
+            canvas.innerHTML = '';
+
+            bubblesInterval = setInterval(() => {
+                createBubble();
+            }, 800);
+        }
+
+        function createBubble() {
+            const canvas = document.getElementById('bubblesCanvas');
+            const bubble = document.createElement('div');
+            bubble.className = 'bubble';
+
+            const size = Math.random() * 60 + 40;
+            bubble.style.width = size + 'px';
+            bubble.style.height = size + 'px';
+            bubble.style.left = Math.random() * (canvas.clientWidth - size) + 'px';
+            bubble.style.top = Math.random() * (canvas.clientHeight - size) + 'px';
+
+            bubble.onclick = function() {
+                playPopSound();
+                bubble.style.animation = 'pop 0.3s ease-out forwards';
+                setTimeout(() => bubble.remove(), 300);
+            };
+
+            canvas.appendChild(bubble);
+
+            setTimeout(() => {
+                if (bubble.parentNode) bubble.remove();
+            }, 10000);
+        }
+
+        function playPopSound() {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            oscillator.frequency.value = 800;
+            oscillator.type = 'sine';
+
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.1);
+        }
+
+        // ===== ZEN DRAW ACTIVITY =====
+        let zenCanvas, zenCtx, isDrawing = false, currentColor = '#4A6FA5';
+
+        function initZenCanvas() {
+            zenCanvas = document.getElementById('zenCanvas');
+            zenCtx = zenCanvas.getContext('2d');
+            zenCanvas.width = zenCanvas.offsetWidth;
+            zenCanvas.height = zenCanvas.offsetHeight;
+
+            zenCanvas.onmousedown = startDrawing;
+            zenCanvas.onmousemove = draw;
+            zenCanvas.onmouseup = stopDrawing;
+            zenCanvas.onmouseleave = stopDrawing;
+
+            zenCanvas.ontouchstart = (e) => {
+                e.preventDefault();
+                startDrawing(e.touches[0]);
+            };
+            zenCanvas.ontouchmove = (e) => {
+                e.preventDefault();
+                draw(e.touches[0]);
+            };
+            zenCanvas.ontouchend = stopDrawing;
+        }
+
+        function startDrawing(e) {
+            isDrawing = true;
+            const rect = zenCanvas.getBoundingClientRect();
+            zenCtx.beginPath();
+            zenCtx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            const rect = zenCanvas.getBoundingClientRect();
+            zenCtx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+            zenCtx.strokeStyle = currentColor;
+            zenCtx.lineWidth = 3;
+            zenCtx.lineCap = 'round';
+            zenCtx.stroke();
+        }
+
+        function stopDrawing() {
+            isDrawing = false;
+        }
+
+        function selectColor(color) {
+            currentColor = color;
+            document.querySelectorAll('.color-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        function clearCanvas() {
+            zenCtx.clearRect(0, 0, zenCanvas.width, zenCanvas.height);
+        }
+
+        // ===== CALM SOUNDS ACTIVITY =====
+        let audioContexts = {};
+
+        function toggleSound(soundType) {
+            const btn = document.getElementById('sound-' + soundType);
+
+            if (audioContexts[soundType]) {
+                stopSound(soundType);
+                btn.classList.remove('playing');
+            } else {
+                playSound(soundType);
+                btn.classList.add('playing');
+            }
+        }
+
+        function playSound(soundType) {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            const filter = audioContext.createBiquadFilter();
+
+            oscillator.connect(filter);
+            filter.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            if (soundType === 'rain') {
+                oscillator.type = 'white';
+                filter.type = 'lowpass';
+                filter.frequency.value = 1000;
+                gainNode.gain.value = 0.1;
+            } else if (soundType === 'ocean') {
+                oscillator.type = 'sine';
+                oscillator.frequency.value = 100;
+                filter.type = 'lowpass';
+                filter.frequency.value = 500;
+                gainNode.gain.value = 0.15;
+            } else if (soundType === 'forest') {
+                oscillator.type = 'triangle';
+                oscillator.frequency.value = 200;
+                filter.type = 'bandpass';
+                filter.frequency.value = 800;
+                gainNode.gain.value = 0.12;
+            } else if (soundType === 'fire') {
+                oscillator.type = 'pink';
+                filter.type = 'lowpass';
+                filter.frequency.value = 2000;
+                gainNode.gain.value = 0.1;
+            }
+
+            oscillator.start();
+            audioContexts[soundType] = { context: audioContext, oscillator: oscillator };
+        }
+
+        function stopSound(soundType) {
+            if (audioContexts[soundType]) {
+                audioContexts[soundType].oscillator.stop();
+                audioContexts[soundType].context.close();
+                delete audioContexts[soundType];
+            }
+        }
+
+        function stopAllSounds() {
+            Object.keys(audioContexts).forEach(soundType => {
+                stopSound(soundType);
+                const btn = document.getElementById('sound-' + soundType);
+                if (btn) btn.classList.remove('playing');
+            });
+            if (breatheInterval) clearInterval(breatheInterval);
+            if (bubblesInterval) clearInterval(bubblesInterval);
+            if (smashInterval) clearInterval(smashInterval);
+        }
+
+        // ===== SMASH IT GAME =====
+        let smashInterval, smashScore = 0;
+        const smashEmojis = ['📱', '💼', '📧', '⏰', '📊', '🖥️', '📞', '📅'];
+
+        function startSmashGame() {
+            smashScore = 0;
+            document.getElementById('smashScore').textContent = 'Score: 0';
+            const area = document.getElementById('smashArea');
+            area.innerHTML = '';
+
+            for (let i = 0; i < 5; i++) {
+                setTimeout(() => createSmashObject(), i * 500);
+            }
+
+            smashInterval = setInterval(() => {
+                createSmashObject();
+            }, 2000);
+        }
+
+        function createSmashObject() {
+            const area = document.getElementById('smashArea');
+            const obj = document.createElement('div');
+            obj.className = 'smash-object';
+            obj.textContent = smashEmojis[Math.floor(Math.random() * smashEmojis.length)];
+            obj.style.left = Math.random() * (area.clientWidth - 60) + 'px';
+            obj.style.top = Math.random() * (area.clientHeight - 60) + 'px';
+
+            obj.onclick = function() {
+                smashScore++;
+                document.getElementById('smashScore').textContent = 'Score: ' + smashScore;
+                playSmashSound();
+                obj.style.animation = 'smash 0.4s ease-out forwards';
+                setTimeout(() => obj.remove(), 400);
+            };
+
+            area.appendChild(obj);
+
+            setTimeout(() => {
+                if (obj.parentNode) obj.remove();
+            }, 8000);
+        }
+
+        function playSmashSound() {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            oscillator.frequency.value = 150;
+            oscillator.type = 'square';
+
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
+
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.15);
+        }
+
+        // ===== AFFIRMATIONS ACTIVITY =====
+        const affirmations = [
+            "You are capable of amazing things.",
+            "You deserve peace and happiness.",
+            "You are stronger than you think.",
+            "This too shall pass.",
+            "You are doing your best, and that's enough.",
+            "You are worthy of love and respect.",
+            "Every breath is a fresh start.",
+            "You have the power to create change.",
+            "You are not your stress.",
+            "You are resilient and brave.",
+            "You deserve to take time for yourself.",
+            "You are growing and learning every day.",
+            "Your feelings are valid.",
+            "You are exactly where you need to be.",
+            "You have overcome challenges before, you can do it again.",
+            "You are a work in progress, and that's beautiful.",
+            "You are enough, just as you are.",
+            "Peace is available to you right now.",
+            "You choose how to respond to stress.",
+            "You are creating a life you love.",
+            "Your potential is limitless.",
+            "You are surrounded by possibilities.",
+            "You are becoming the best version of yourself.",
+            "You deserve rest and relaxation.",
+            "You are in control of your thoughts.",
+            "You radiate calm and confidence.",
+            "You are worthy of all good things.",
+            "You have everything you need within you.",
+            "You are making progress, even when it doesn't feel like it.",
+            "You deserve to feel good."
+        ];
+
+        function newAffirmation() {
+            const text = document.getElementById('affirmationText');
+            const randomAffirmation = affirmations[Math.floor(Math.random() * affirmations.length)];
+            text.style.opacity = 0;
+            setTimeout(() => {
+                text.textContent = randomAffirmation;
+                text.style.transition = 'opacity 0.5s';
+                text.style.opacity = 1;
+            }, 200);
+        }
+    </script>
+</body>
+</html>
